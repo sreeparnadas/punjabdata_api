@@ -17,9 +17,10 @@ class CreateDrawMastersTable extends Migration
         Schema::create('draw_masters', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('serial_number');
-            $table->string('draw_name',100)->nullable(true);
             $table->time('start_time');
             $table->time('end_time');
+            $table->string('draw_name',100)->nullable(true);
+
             $table->string('meridiem',2);
             $table->tinyInteger('active')->default(0);
             $table->integer('diff')->default(0);
