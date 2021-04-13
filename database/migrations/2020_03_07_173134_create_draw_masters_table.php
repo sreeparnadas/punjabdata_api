@@ -19,6 +19,7 @@ class CreateDrawMastersTable extends Migration
             $table->integer('serial_number');
             $table->time('start_time');
             $table->time('end_time');
+            $table->time('display_time');
             $table->string('draw_name',100)->nullable(true);
 
             $table->string('meridiem',2);

@@ -20,9 +20,6 @@ class CreateResultMastersTable extends Migration
             $table->integer('jumble_number')->nullable(true);
             $table->date('game_date');
 
-            $table->bigInteger('draw_master_id')->unsigned();
-            $table ->foreign('draw_master_id')->references('id')->on('draw_masters');
-
             $table->bigInteger('draw_details_id')->unsigned();
             $table ->foreign('draw_details_id')->references('id')->on('draw_details');
 

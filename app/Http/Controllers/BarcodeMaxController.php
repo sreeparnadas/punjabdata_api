@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class BarcodeMaxController extends Controller
 {
-    /**
+    /**insert_jodi_result
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
