@@ -26,7 +26,7 @@ class CreateResultMastersTable extends Migration
             $table->bigInteger('game_id')->unsigned()->nullable(true);
             $table ->foreign('game_id')->references('id')->on('games');
 
-            $table->unique(['game_date', 'draw_master_id']);
+//            $table->unique(['game_date', 'draw_master_id']);
 
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));

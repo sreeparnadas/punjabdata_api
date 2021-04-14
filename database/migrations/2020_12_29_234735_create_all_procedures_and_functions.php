@@ -114,7 +114,7 @@ class CreateAllProceduresAndFunctions extends Migration
                         ,game_id
                         ,game_date
                       ) VALUES (
-                         draw_details_id
+                         in_draw_details_id
                          ,1
                         ,curdate()
                       );
@@ -123,7 +123,7 @@ class CreateAllProceduresAndFunctions extends Migration
                       select LAST_INSERT_ID() into last_inserted_id;
                       set @i=1;
                       SELECT payout into payoutValue FROM `play_series` where id=@i;
-                      set @cell_address=get_2d_winning_cell(draw_master_id,draw_details_id, @i ,date_format(curdate(), "%Y-%m-%d"));
+                      set @cell_address=get_2d_winning_cell(draw_master_id,in_draw_details_id, @i ,date_format(curdate(), "%Y-%m-%d"));
                       set @r=floor(@cell_address / 10);
                       set @c=@cell_address % 10;
                        insert into result_details (
@@ -144,24 +144,73 @@ class CreateAllProceduresAndFunctions extends Migration
                         ELSE
                             COMMIT;
                         END IF;
-                    END;
+                    END
         ');
         DB::unprepared('DROP FUNCTION IF EXISTS gamepane_punjab_data.get_2d_winning_cell;
                 CREATE FUNCTION gamepane_punjab_data.`get_2d_winning_cell`(`draw_id` INT, `in_draw_details_id` INT, `series_id` INT, `draw_date` DATE) RETURNS int
                     READS SQL DATA
                     DETERMINISTIC
                 BEGIN
-                              DECLARE cell_address INT;
-                              DECLARE target_value INT;
-                              DECLARE winning_row INT;
-                              DECLARE winning_col INT;
-                              DECLARE val INT;
-                              select get_winning_value(draw_id, series_id, draw_date) into target_value;
-                              select result into cell_address from manual_result_digits where play_series_id=series_id and draw_details_id=in_draw_details_id
-                              and game_date=curdate();
-
-                              return cell_address;
-                END;
+              DECLARE cell_address INT;
+              DECLARE target_value INT;
+              DECLARE winning_row INT;
+              DECLARE winning_col INT;
+              DECLARE val INT;
+              select get_winning_value(draw_id, series_id, draw_date) into target_value;
+              select result into cell_address from manual_result_digits
+              where play_series_id=series_id and draw_details_id=in_draw_details_id and game_date=draw_date;
+              IF cell_address IS NULL THEN
+                 /*Get the matching value*/
+                select
+                sum(play_details.game_value) as game_value into val
+                from play_details
+                inner join play_masters ON play_masters.id = play_details.play_master_id
+                inner join play_series ON play_series.id = play_details.play_series_id
+                where play_masters.draw_master_id=draw_id and play_series.id=series_id and date(play_masters.created_at)=draw_date
+                group by play_details.row_num, play_details.col_num
+                having game_value<=target_value order by game_value desc limit 1;
+              /*End of get the matching value*/
+              /*Fetch the final row and column both and set the cell*/
+                select row_num,col_num into winning_row,winning_col from (select play_details.row_num,play_details.col_num,
+                sum(play_details.game_value) as game_value
+                from play_details
+                inner join play_masters ON play_masters.id = play_details.play_master_id
+                inner join play_series ON play_series.id = play_details.play_series_id
+                where play_masters.draw_master_id=draw_id and play_series.id=series_id and date(play_masters.created_at)=draw_date
+                group by play_details.row_num, play_details.col_num
+                having game_value = val order by rand() limit 1) as table1;
+                SET cell_address = 10 * winning_row + winning_col;
+              END IF;
+              /* If do not get the closest lower value of the target value then select blank cell*/
+              IF cell_address IS NULL THEN
+                SET cell_address= get_jodi_null_cell(draw_id, series_id, draw_date);
+              END IF;
+              /* End of  selecting the blank cell*/
+              /* If no equal or closest lower value OR no blank cell then select the closest greater value*/
+              IF cell_address IS NULL THEN
+                 /*Get the matching value*/
+                select sum(play_details.game_value) as game_value into val
+                from play_details
+                inner join play_masters ON play_masters.id = play_details.play_master_id
+                inner join play_series ON play_series.id = play_details.play_series_id
+                where play_masters.draw_master_id=draw_id and play_details.play_series_id=series_id
+                and date(play_masters.created_at)=draw_date
+                group by play_details.row_num, play_details.col_num
+                having game_value > target_value order by game_value asc limit 1;
+              /*End of get the matching value*/
+              /*Fetch the final row and column both and set the cell*/
+                select row_num,col_num into winning_row,winning_col from (select play_details.row_num,play_details.col_num,
+                sum(play_details.game_value) as game_value
+                from play_details
+                inner join play_masters ON play_masters.id = play_details.play_master_id
+                inner join play_series ON play_series.id = play_details.play_series_id
+                where play_masters.draw_master_id=draw_id and play_series.id=series_id and date(play_masters.created_at)=draw_date
+                group by play_details.row_num, play_details.col_num
+                having game_value = val order by rand() limit 1)as table1;
+                SET cell_address = 10 * winning_row + winning_col;
+              END IF;
+                RETURN cell_address;
+            END
         ');
 
         DB::unprepared('DROP FUNCTION IF EXISTS gamepane_punjab_data.get_2d_winning_cell_bk;
