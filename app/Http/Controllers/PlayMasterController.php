@@ -60,6 +60,12 @@ class PlayMasterController extends Controller
                 ) );
 
             $currentBalance = StockistToTerminal::select('current_balance')->where('terminal_id', $terminalId)->first();
+            
+            if(!empty($currentBalance)){
+                $terminalBalance = $currentBalance->current_balance;
+            }else{
+                $terminalBalance = 0;
+            }
             DB::commit();
         }
 
@@ -69,7 +75,7 @@ class PlayMasterController extends Controller
             return response()->json(array('success' => 0, 'msg' => $e->getMessage().'<br>File:-'.$e->getFile().'<br>Line:-'.$e->getLine()),401);
         }
 
-        return response()->json(['success'=> 1,'barcode'=>$barcode, 'purchase_date' => $currentDate, 'purchase_time' => $currentTime,'current_balance'=> $currentBalance->current_balance], 200);
+        return response()->json(['success'=> 1,'barcode'=>$barcode, 'purchase_date' => $currentDate, 'purchase_time' => $currentTime,'current_balance'=> $terminalBalance], 200);
     }
 
 
